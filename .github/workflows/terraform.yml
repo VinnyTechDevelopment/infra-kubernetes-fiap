@@ -32,6 +32,10 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
       AWS_REGION: us-east-1
+      # License Key já está nos secrets da organization — liga a integração
+      # de infraestrutura do New Relic no cluster (ver newrelic.tf).
+      TF_VAR_newrelic_enabled: "true"
+      TF_VAR_newrelic_license_key: ${{ secrets.NEWRELIC_LICENSE_KEY }}
     steps:
       - uses: actions/checkout@v4
 
