@@ -2,12 +2,39 @@
 
 Provisiona a rede (VPC) e o cluster Kubernetes gerenciado (EKS) na AWS que hospeda a aplicação Laravel do Tech Challenge Fase 3, via Terraform.
 
+## Arquitetura
+
+```mermaid
+flowchart TB
+    subgraph VPC["VPC (var.vpc_cidr)"]
+        subgraph Public["Subnets públicas (2 AZs)"]
+            NAT[NAT Gateway]
+        end
+        subgraph Private["Subnets privadas (2 AZs)"]
+            subgraph EKS["Cluster EKS"]
+                NG["Managed Node Group\nt3.medium, min/max/desired configuráveis"]
+            end
+        end
+    end
+    NG -->|saída p/ internet| NAT
+    Helm["helm_release metrics-server"] -->|instala em| EKS
+    Other1["infra-database"] -.->|"lê vpc_id / private_subnet_ids via terraform_remote_state"| VPC
+    Other2["lambda-auth-cpf"] -.->|"lê vpc_id / private_subnet_ids via terraform_remote_state"| VPC
+    Other3["tech-challenge-fiap"] -.->|"lê cluster_endpoint / cluster_name via terraform_remote_state"| EKS
+```
+
+Este repositório é a base: os outros três (`infra-database-fiap`, `lambda-auth-cpf-fiap` e
+`tech-challenge-fiap`) leem os outputs daqui via `terraform_remote_state` — por isso ele precisa ser
+aplicado primeiro.
+
 ## O que este repositório cria
 
 - VPC dedicada com subnets públicas e privadas em 2 AZs, NAT Gateway.
 - Cluster EKS com um managed node group (autoscaling entre `node_min_size` e `node_max_size`).
 - `metrics-server` via Helm, necessário para o HPA da aplicação Laravel.
-- Addons gerenciados do EKS: CoreDNS, kube-proxy, VPC CNI, EBS CSI driver.
+- Addons gerenciados do EKS: CoreDNS, kube-proxy, VPC CNI. (Sem EBS CSI driver: como o MySQL virou
+  RDS — ver `infra-database-fiap` —, não sobra nenhum PersistentVolume dentro do cluster que precise
+  dele.)
 
 ## O que este repositório NÃO cria
 

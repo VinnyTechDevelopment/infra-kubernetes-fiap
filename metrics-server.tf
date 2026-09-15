@@ -5,5 +5,5 @@ resource "helm_release" "metrics_server" {
   namespace  = "kube-system"
   version    = "3.12.1"
 
-  depends_on = [module.eks]
+  depends_on = [aws_eks_node_group.default, aws_eks_addon.vpc_cni]
 }

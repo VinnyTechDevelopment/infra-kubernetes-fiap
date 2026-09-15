@@ -25,6 +25,11 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
       AWS_REGION: us-east-1
+      # var.lab_role_arn não tem default — sem isso, o terraform plan/apply
+      # fica preso esperando input interativo no runner (sem TTY, nunca
+      # chega), até o job estourar o timeout. Ver o ARN da LabRole com:
+      # aws iam get-role --role-name LabRole --query 'Role.Arn' --output text
+      TF_VAR_lab_role_arn: ${{ secrets.LAB_ROLE_ARN }}
     steps:
       - uses: actions/checkout@v4
 
