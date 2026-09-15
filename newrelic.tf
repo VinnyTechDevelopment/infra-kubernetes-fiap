@@ -67,5 +67,5 @@ resource "helm_release" "newrelic_bundle" {
     value = "false"
   }
 
-  depends_on = [module.eks]
+  depends_on = [aws_eks_node_group.default, aws_eks_addon.vpc_cni]
 }
