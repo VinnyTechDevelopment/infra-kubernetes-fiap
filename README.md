@@ -38,11 +38,21 @@ terraform apply
 
 ## CI/CD
 
-O workflow `.github/workflows/terraform.yml` roda `terraform plan` em todo Pull Request. O `apply` é disparado manualmente (`workflow_dispatch`), porque no AWS Academy as credenciais são temporárias (expiram em poucas horas) e precisam ser atualizadas nos secrets do repositório a cada sessão nova do Lab — não dá pra automatizar via OIDC como seria numa conta AWS normal.
+O workflow `.github/workflows/terraform.yml` roda `terraform plan` em todo Pull Request e agora também `terraform apply` automático a cada push em `main`. As credenciais do AWS Academy são temporárias (expiram em poucas horas), mas como os secrets (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, `TF_STATE_BUCKET`, `TF_LOCK_TABLE`) agora ficam no nível de **Organization** do GitHub em vez de por repositório, atualizar a sessão do Lab uma vez propaga pra todos os repositórios — por isso o apply automático em `main` voltou a fazer sentido. Se a sessão do Lab tiver expirado no meio de um push, o job falha; basta atualizar o secret da organization e re-rodar manualmente (`workflow_dispatch` continua existindo como fallback).
 
-Secrets necessários no repositório:
+Secrets necessários (nível de Organization):
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` — copiados do bloco "AWS Details" do Learner Lab, atualizados a cada sessão
 - `TF_STATE_BUCKET`
 - `TF_LOCK_TABLE`
 
-Se/quando migrar para uma conta AWS normal (fora do Academy), dá pra trocar para autenticação via OIDC (sem secret fixo) e voltar o `apply` para automático no merge da `main` — nesse caso também dá pra ligar `enable_irsa`, `create_kms_key` e deixar o Terraform criar as roles IAM (`create_iam_role = true`) em vez de reusar a `LabRole`.
+Se/quando migrar para uma conta AWS normal (fora do Academy), dá pra trocar para autenticação via OIDC (sem secret fixo) — nesse caso também dá pra ligar `enable_irsa`, `create_kms_key` e deixar o Terraform criar as roles IAM (`create_iam_role = true`) em vez de reusar a `LabRole`.
+
+## New Relic (opcional)
+
+Integração de infraestrutura do New Relic no cluster (CPU/memória dos pods, healthchecks, eventos do Kubernetes), via `newrelic.tf`. Fica **desligada por padrão** (`newrelic_enabled = false`) até existir uma conta/License Key do New Relic. Para ligar:
+
+```hcl
+newrelic_enabled      = true
+newrelic_license_key  = "SUA_LICENSE_KEY"
+newrelic_cluster_name = "techchallenge-eks"  # opcional, já é o default
+```
