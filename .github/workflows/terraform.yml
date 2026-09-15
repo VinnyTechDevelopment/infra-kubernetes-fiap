@@ -3,13 +3,20 @@ name: Terraform infra-kubernetes
 # NOTA (AWS Academy): o Academy não permite criar um IAM OIDC provider, então
 # a autenticação via role assumida (OIDC) do workflow original não funciona
 # aqui. Em vez disso, usamos as 3 credenciais temporárias que o Academy gera
-# a cada sessão (Access Key, Secret Key, Session Token), guardadas como
-# secrets do repositório. Elas expiram em poucas horas — é preciso atualizar
-# os secrets manualmente a cada sessão nova do Lab. O apply por isso roda só
-# sob demanda (workflow_dispatch), não automaticamente a cada push na main.
+# a cada sessão (Access Key, Secret Key, Session Token). Antes ficavam como
+# secret por repositório e precisavam ser atualizadas em cada um a cada
+# sessão nova do Lab; agora são secret de nível de Organization no GitHub, e
+# atualizar uma vez propaga pra todos os repositórios. Por isso o apply em
+# `main` voltou a ser automático — mas a sessão do Lab ainda expira em
+# poucas horas, então um push pode falhar se ela tiver caído nesse meio
+# tempo; nesse caso basta atualizar o secret da organization e re-rodar o
+# job manualmente (ou via `workflow_dispatch`, que continua existindo como
+# fallback).
 
 on:
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
   workflow_dispatch: {}
 
@@ -30,6 +37,10 @@ jobs:
       # chega), até o job estourar o timeout. Ver o ARN da LabRole com:
       # aws iam get-role --role-name LabRole --query 'Role.Arn' --output text
       TF_VAR_lab_role_arn: ${{ secrets.LAB_ROLE_ARN }}
+      # License Key já está nos secrets da organization — liga a integração
+      # de infraestrutura do New Relic no cluster (ver newrelic.tf).
+      TF_VAR_newrelic_enabled: "true"
+      TF_VAR_newrelic_license_key: ${{ secrets.NEWRELIC_LICENSE_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -53,5 +64,5 @@ jobs:
         run: terraform plan -no-color
 
       - name: Terraform Apply
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         run: terraform apply -auto-approve
