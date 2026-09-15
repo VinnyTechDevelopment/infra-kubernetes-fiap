@@ -14,6 +14,13 @@ module "eks" {
   create_iam_role = false
   iam_role_arn    = var.lab_role_arn
 
+  # Por padrão o módulo tenta resolver a IAM role de quem está aplicando via
+  # iam:GetRole, pra conceder acesso de admin no cluster a essa identidade.
+  # O AWS Academy nega explicitamente iam:GetRole pra qualquer role que não
+  # seja a LabRole (política Pvoclabs2), então isso quebra o plan/apply.
+  # Desligado porque o acesso ao cluster já é feito via LabRole mesmo.
+  enable_cluster_creator_admin_permissions = false
+
   # IRSA cria um IAM OpenID Connect provider, o que também exige permissão
   # de criar recursos IAM que o Academy não libera. Desligado por enquanto.
   enable_irsa = false
