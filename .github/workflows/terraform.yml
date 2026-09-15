@@ -1,0 +1,52 @@
+name: Terraform infra-kubernetes
+
+# NOTA (AWS Academy): o Academy não permite criar um IAM OIDC provider, então
+# a autenticação via role assumida (OIDC) do workflow original não funciona
+# aqui. Em vez disso, usamos as 3 credenciais temporárias que o Academy gera
+# a cada sessão (Access Key, Secret Key, Session Token), guardadas como
+# secrets do repositório. Elas expiram em poucas horas — é preciso atualizar
+# os secrets manualmente a cada sessão nova do Lab. O apply por isso roda só
+# sob demanda (workflow_dispatch), não automaticamente a cada push na main.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_REGION: us-east-1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Terraform Init
+        run: >
+          terraform init
+          -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
+          -backend-config="key=infra-kubernetes/terraform.tfstate"
+          -backend-config="region=us-east-1"
+          -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}"
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        if: github.event_name == 'pull_request'
+        run: terraform plan -no-color
+
+      - name: Terraform Apply
+        if: github.event_name == 'workflow_dispatch'
+        run: terraform apply -auto-approve
