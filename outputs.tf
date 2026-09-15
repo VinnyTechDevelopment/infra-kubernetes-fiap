@@ -15,21 +15,24 @@ output "public_subnet_ids" {
 }
 
 output "cluster_name" {
-  value = module.eks.cluster_name
+  value = aws_eks_cluster.this.name
 }
 
 output "cluster_endpoint" {
-  value = module.eks.cluster_endpoint
+  value = aws_eks_cluster.this.endpoint
 }
 
 output "cluster_certificate_authority_data" {
-  value = module.eks.cluster_certificate_authority_data
+  value = aws_eks_cluster.this.certificate_authority[0].data
 }
 
 output "cluster_security_group_id" {
-  value = module.eks.cluster_security_group_id
+  value = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
 }
 
+# Sem launch template customizado, o node group usa o mesmo security group
+# do cluster (a AWS não cria um security group separado pros nodes nesse
+# caso) — por isso os dois outputs abaixo têm o mesmo valor.
 output "node_security_group_id" {
-  value = module.eks.node_security_group_id
+  value = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
 }
