@@ -23,9 +23,16 @@ variable "vpc_cidr" {
 }
 
 variable "cluster_version" {
-  description = "Versão do Kubernetes no EKS"
+  description = <<-EOT
+    Versão do Kubernetes no EKS. IMPORTANTE: a AWS para de publicar AMI pra
+    managed node group assim que o suporte padrão da versão termina (14 meses
+    a partir do lançamento) — apply falha com "Requested AMI for this version
+    X.Y is not supported" nesse caso, mesmo o cluster em si aceitando a
+    versão. Confira as datas antes de definir:
+    https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
+  EOT
   type        = string
-  default     = "1.30"
+  default     = "1.35"
 }
 
 variable "node_instance_types" {
