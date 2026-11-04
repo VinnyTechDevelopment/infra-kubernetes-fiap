@@ -74,12 +74,16 @@ Secrets necessários (nível de Organization):
 
 Se/quando migrar para uma conta AWS normal (fora do Academy), dá pra trocar para autenticação via OIDC (sem secret fixo) — nesse caso também dá pra ligar `enable_irsa`, `create_kms_key` e deixar o Terraform criar as roles IAM (`create_iam_role = true`) em vez de reusar a `LabRole`.
 
-## New Relic (opcional)
+## New Relic (observabilidade do cluster)
 
-Integração de infraestrutura do New Relic no cluster (CPU/memória dos pods, healthchecks, eventos do Kubernetes), via `newrelic.tf`. Fica **desligada por padrão** (`newrelic_enabled = false`) até existir uma conta/License Key do New Relic. Para ligar:
+Integração de infraestrutura do New Relic no cluster (CPU/memória dos pods, healthchecks, eventos e logs do Kubernetes), via `newrelic.tf` (Helm `nri-bundle`). Fica **ligada por padrão** (`newrelic_enabled = true`): no CI a License Key vem do secret de organização `NEWRELIC_LICENSE_KEY`. Um bloco `check` no Terraform avisa no plan se a integração estiver ligada sem chave.
+
+Para rodar localmente:
 
 ```hcl
-newrelic_enabled      = true
 newrelic_license_key  = "SUA_LICENSE_KEY"
 newrelic_cluster_name = "techchallenge-eks"  # opcional, já é o default
+# newrelic_enabled    = false               # só se quiser subir sem New Relic
 ```
+
+No New Relic, o cluster aparece em **Infrastructure → Kubernetes** com o nome `techchallenge-eks`.

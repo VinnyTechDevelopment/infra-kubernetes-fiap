@@ -19,11 +19,11 @@ module "vpc" {
 
   # Tags exigidas pelo EKS/ALB para descobrir as subnets automaticamente
   public_subnet_tags = {
-    "kubernetes.io/role/elb"                       = 1
+    "kubernetes.io/role/elb"                        = 1
     "kubernetes.io/cluster/${var.project_name}-eks" = "shared"
   }
   private_subnet_tags = {
-    "kubernetes.io/role/internal-elb"              = 1
+    "kubernetes.io/role/internal-elb"               = 1
     "kubernetes.io/cluster/${var.project_name}-eks" = "shared"
   }
 
