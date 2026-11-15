@@ -32,6 +32,28 @@ resource "aws_eks_cluster" "this" {
   # adicional da nossa parte.
 }
 
+# IMDSv2 com hop limit 1 (padrão) só responde ao próprio node: os pods (um
+# salto a mais) não conseguem as credenciais da LabRole e o AWS SDK falha
+# (SQS/DynamoDB dos microsserviços da Fase 4). Sem IRSA no Academy, o
+# caminho é liberar 2 saltos.
+resource "aws_launch_template" "nodes" {
+  name_prefix = "${var.project_name}-eks-nodes-"
+
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 2
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Project     = var.project_name
+      Environment = var.environment
+    }
+  }
+}
+
 resource "aws_eks_node_group" "default" {
   cluster_name    = aws_eks_cluster.this.name
   node_group_name = "default"
@@ -39,6 +61,11 @@ resource "aws_eks_node_group" "default" {
   subnet_ids      = module.vpc.private_subnets
 
   instance_types = var.node_instance_types
+
+  launch_template {
+    id      = aws_launch_template.nodes.id
+    version = aws_launch_template.nodes.latest_version
+  }
 
   scaling_config {
     min_size     = var.node_min_size
