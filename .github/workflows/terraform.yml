@@ -37,9 +37,8 @@ jobs:
       # chega), até o job estourar o timeout. Ver o ARN da LabRole com:
       # aws iam get-role --role-name LabRole --query 'Role.Arn' --output text
       TF_VAR_lab_role_arn: ${{ secrets.LAB_ROLE_ARN }}
-      # License Key já está nos secrets da organization — liga a integração
-      # de infraestrutura do New Relic no cluster (ver newrelic.tf).
-      TF_VAR_newrelic_enabled: "true"
+      # Integração de infraestrutura do New Relic (newrelic.tf) — ligada por
+      # padrão; a License Key vem do secret de organização.
       TF_VAR_newrelic_license_key: ${{ secrets.NEWRELIC_LICENSE_KEY }}
     steps:
       - uses: actions/checkout@v4
@@ -47,6 +46,13 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.9.0"
+
+      - name: Verificar secrets do New Relic
+        run: |
+          if [ -z "$TF_VAR_newrelic_license_key" ]; then
+            echo "::error::Secret NEWRELIC_LICENSE_KEY ausente — o New Relic é obrigatório (observabilidade da Fase 3)."
+            exit 1
+          fi
 
       - name: Terraform Init
         run: >

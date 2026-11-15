@@ -1,20 +1,29 @@
-# Integração opcional do New Relic com o cluster (consumo de CPU/memória dos
-# pods, healthchecks, eventos do Kubernetes). Desligada por padrão
-# (newrelic_enabled = false) porque o usuário ainda não tem conta/License Key
-# do New Relic — quando tiver, é só setar newrelic_enabled = true e preencher
-# newrelic_license_key via tfvars/secret.
+# Integração do New Relic com o cluster (consumo de CPU/memória dos pods,
+# healthchecks, eventos e logs do Kubernetes) via nri-bundle. Ligada por
+# padrão: a License Key vem do secret de organização NEWRELIC_LICENSE_KEY
+# (ver .github/workflows/terraform.yml). Só desligue (newrelic_enabled =
+# false) para rodar o cluster localmente sem conta New Relic.
 
 variable "newrelic_enabled" {
-  description = "Liga a integração de infraestrutura do New Relic no cluster (helm_release nri-bundle). Fica false até existir uma conta/License Key."
+  description = "Liga a integração de infraestrutura do New Relic no cluster (helm_release nri-bundle)."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "newrelic_license_key" {
-  description = "License key do New Relic (Infrastructure). Obrigatória só quando newrelic_enabled = true."
+  description = "License key do New Relic (Infrastructure). Obrigatória quando newrelic_enabled = true."
   type        = string
   sensitive   = true
   default     = ""
+}
+
+# Falha no plan (em vez de subir o nri-bundle com chave vazia e o cluster
+# ficar "ligado" no código mas sem reportar nada no New Relic).
+check "newrelic_license_key_presente" {
+  assert {
+    condition     = !var.newrelic_enabled || length(var.newrelic_license_key) > 0
+    error_message = "newrelic_enabled = true exige newrelic_license_key (secret NEWRELIC_LICENSE_KEY)."
+  }
 }
 
 variable "newrelic_cluster_name" {
