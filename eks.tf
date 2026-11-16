@@ -38,8 +38,11 @@ resource "aws_eks_cluster" "this" {
 # AWS Academy e os nodes nunca entravam no cluster. Os pods que precisam de
 # credenciais da LabRole usam hostNetwork nos repositórios dos serviços.
 resource "aws_eks_node_group" "default" {
-  cluster_name    = aws_eks_cluster.this.name
-  node_group_name = "default"
+  cluster_name = aws_eks_cluster.this.name
+  # Novo nome força a substituição: o node group "default" ficou apontando para
+  # um launch template já removido e o EKS não permite tirar o launch template
+  # de um node group existente.
+  node_group_name = "nodes"
   node_role_arn   = var.lab_role_arn
   subnet_ids      = module.vpc.private_subnets
 
@@ -60,7 +63,8 @@ resource "aws_eks_node_group" "default" {
   # Evita loop de recriação se o desired_size mudar por causa de scaling
   # automático (não usamos autoscaler aqui, mas é uma prática segura).
   lifecycle {
-    ignore_changes = [scaling_config[0].desired_size]
+    create_before_destroy = true
+    ignore_changes        = [scaling_config[0].desired_size]
   }
 }
 
